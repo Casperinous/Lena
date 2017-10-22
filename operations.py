@@ -1,39 +1,35 @@
 from buffer import Buffer
-from androguard.core.bytecodes.dvm import StringDataItem, writeuleb128
+from androguard.core.bytecodes.dvm import StringDataItem, writeuleb128, readuleb128
+from androguard.core import bytecode
 
 
-def _decode(b):
-    # decode arbitrary utf8 codepoints, tolerating surrogate pairs, nonstandard encodings, etc.
-    for x in b:
-        if x < 128:
-            yield x
-        else:
-            # figure out how many bytes
-            extra = 0
-            for i in range(6, 0, -1):
-                if x & (1<<i):
-                    extra += 1
-                else:
-                    break
+def create_string_str(string):
 
-            bits = x % (1 << 6-extra)
-            for _ in range(extra):
-                bits = (bits << 6) ^ (next(b) & 63)
-            yield bits
+	arr = bytearray()
 
-def _fixPairs(codes):
-    # convert surrogate pairs to single code points
-    for x in codes:
-        if 0xD800 <= x < 0xDC00:
-            high = x - 0xD800
-            low = next(codes) - 0xDC00
-            yield 0x10000 + (high << 10) + (low & 1023)
-        else:
-            yield x
+	"""
+		After many hours studying, testing and trying to understand Android's code, 
+		and in conjuction with the Android's docs, in order one to build a StringDataItem
+		needs to parse:
+		- the string's size in UnsignedLeb128 encoding
+		- the bytes of the string
+		- one last byte with filled with one zero.
+
+		Based on this, https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringDataItem.java
+		of course the fastest way was a bytearray and the use of the 'extend' method.
+		Believe me, this took ages.
+
+		out.writeUnsignedLeb128(utf16Size);
+		out.write(bytes);
+		out.writeByte(0);
+	"""
+	str_length = len(string)
+	arr.extend(writeuleb128(str_length))
+	arr.extend(string)
+	arr.extend('\0')
+	return str(arr)
 
 
-def decode(b):
-	return ''.join(map(chr, _fixPairs(_decode(iter(b)))))
 
 class DexOperation:
 
@@ -55,19 +51,13 @@ class DexOperation:
 			as we will perform again a sort operation after adding our string.
 			First, we call writeuleb128 on our string and the result is 
 			passed to the Buffer object
-		"""
-
-		print 
+		""" 
 		item = None
-		#encoded_str = writeuleb128(int(string))
 		encoded_str = string.encode('utf-8')
-		s = bytearray(encoded_str)
-		print s[0:len(s)]
 		if encoded_str:
 			# Index is set to zero, but we do not really care.
-			buff = Buffer(encoded_str)
-			print '[{0}]'.format(buff.read(1))
-			print ord(buff.read(1))
+			buff = bytecode._Bytecode(create_string_str(encoded_str))
+			print type(buff)
 			item = StringDataItem(buff,cm)
 			if item:
 				print "[+] Succesfully created StringDataItem!"
