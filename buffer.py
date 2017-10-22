@@ -8,11 +8,18 @@ class Buffer:
 
     def __init__(self, buff):
         
+        """
+        Badly, the stable version of Androguard is v2.0 which was
+        published 2-3 years ago. That being said, the source code
+        of the stable version is different of the one in the master
+        branch.
+        ---------------------------------------------------------
         if isinstance(buff,bytearray):
             self.__buff = buff
         else:
             self.__buff = bytearray(buff)
-        
+        """
+        self.__buff = buff
         self.__idx = 0
 
     def __getitem__(self, item):
