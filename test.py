@@ -14,9 +14,4 @@ print '[*] Length of bytearray after extending it : {0}'.format(len(buff))
 
 
 #integer = struct.pack('<i', 'Lola')
-string = bytearray('Lola')
-res = 0
-for i in range(0,3):
-	res += int(string[i:i+1])
-
-print res
+print ord('\0')
