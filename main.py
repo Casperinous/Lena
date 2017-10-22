@@ -25,10 +25,25 @@ if __name__ == "__main__":
 	"""
 	
 	dex_map = d.map_list
-	print dex_map
-
 	# Lets try to create a StringDataItem
 
-	item = DexOperation.create_string_data_item("Lola",d.get_class_manager())
+	item = DexOperation.create_string_data_item("Tsipikao",d.get_class_manager())
 	if item:
-		print item.show()
+		# We have succesfully created on StringDataItem. Now we must append it to the array.
+		d.strings.append(item)
+		"""
+		Again, based on the Android's source code, we must sort the strings and
+		return a new list of StringItemIds based on the newly sorted strings.One
+		small difficulty is that, we must perform a special comparison as the data
+		of a StringDataItem is modification of a UTF8 string.
+		"""
+		#For testing purposes, lets do it fast.
+		sorted_strings = sorted(d.strings, key=lambda item: item.data)
+		"""
+		Used for evaluation.
+		----------------------
+		for item in sorted_strings:
+			print item.get_data()
+		"""
+
+		#Now, based on these sorted strings, we must generate the offsets on the fly while writing the contents.
