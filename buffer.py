@@ -8,10 +8,11 @@ class Buffer:
 
     def __init__(self, buff):
         
-        if isinstance(buff,bytearray)
-            self.__buff
+        if isinstance(buff,bytearray):
+            self.__buff = buff
         else:
             self.__buff = bytearray(buff)
+        
         self.__idx = 0
 
     def __getitem__(self, item):

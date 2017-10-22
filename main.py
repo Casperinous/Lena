@@ -3,6 +3,7 @@ import argparse
 from androguard.misc import AnalyzeAPK 
 from androguard.core.bytecodes.apk import APK 
 from androguard.core.bytecodes.dvm import DalvikVMFormat
+from operations import DexOperation
 
 
 def parseArgs():      
@@ -14,21 +15,20 @@ def parseArgs():
 
 if __name__ == "__main__":
 
+
 	args = parseArgs()
 	a, d, dx = AnalyzeAPK(args.apk)
 
-	'''
+	"""
 	First let's check that we have access to the map file in order to properly extract
 	the sections we want.
-	'''
+	"""
 	
 	dex_map = d.map_list
 	print dex_map
 
-	#strings = d.get_strings()
-	#for i in strings:
-		#print i
+	# Lets try to create a StringDataItem
 
-	string_ids = d.map_list.get_item_type('TYPE_STRING_ID_ITEM')
-	for str_id in string_ids:
-		print str_id.get_string_data_off() 
+	item = DexOperation.create_string_data_item("Lola",d.get_class_manager())
+	if item:
+		print item.show()
