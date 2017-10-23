@@ -1,34 +1,6 @@
 from buffer import Buffer
-from androguard.core.bytecodes.dvm import StringDataItem, writeuleb128, readuleb128
+from androguard.core.bytecodes.dvm import StringDataItem, readuleb128
 from androguard.core import bytecode
-
-
-def create_string_str(string):
-
-	arr = bytearray()
-
-	"""
-		After many hours studying, testing and trying to understand Android's code, 
-		and in conjuction with the Android's docs, in order one to build a StringDataItem
-		needs to parse:
-		- the string's size in UnsignedLeb128 encoding
-		- the bytes of the string
-		- one last byte with filled with one zero.
-
-		Based on this, https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringDataItem.java
-		of course the fastest way was a bytearray and the use of the 'extend' method.
-		Believe me, this took ages.
-
-		out.writeUnsignedLeb128(utf16Size);
-		out.write(bytes);
-		out.writeByte(0);
-	"""
-	str_length = len(string)
-	arr.extend(writeuleb128(str_length))
-	arr.extend(string)
-	arr.extend('\0')
-	return str(arr)
-
 
 
 class DexOperation:
