@@ -62,7 +62,7 @@ class Dex:
 		"""
 
 	def __initSections(self):
-		self.__parse_sections()
+		self.__parseSections()
 		self.sections = [
 			self.header,
 			self.strings_ids,
