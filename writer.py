@@ -12,13 +12,13 @@ class Writer():
 			self._array = bytearray()
 
 
-	def writeUnsignedLong(self, data, packed=False):
+	def writeUnsignedInt(self, data, packed=False):
 		if packed:
 			data = Data.toUnsignedInt(data)
 
 		self._array.extend(data)
 
-	def writeSignedLong(self, data, packed=False):
+	def writeSignedInt(self, data, packed=False):
 		if packed:
 			data = Data.toSignedInt(data)
 
