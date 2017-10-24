@@ -154,6 +154,13 @@ class Dex:
 		self.sec_map = Section('map', 4, None, self.__map)
 		
 
+	def writeToDisk(self):
+
+
+
+		
+
+
 	def prepareSections(self):
 		"""
 		Well, being a noob in python and juding from
