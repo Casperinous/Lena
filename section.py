@@ -20,6 +20,8 @@ class Section():
 		self.__file_off = 0
 		#Should be computed based on the available data
 		self.__write_size = 0
+		#Check the instance write size in disk
+		self.__instance_write_size = 0
 		#Check if modified.
 		self.__is_modified = False
 		#Check if contributes to header's data
@@ -30,11 +32,8 @@ class Section():
 
 	def _calculateWriteSize(self):
 
-		elem = None
-		if isinstance(self.__object, list):
-			elem = self.__object[0]
-		else
-			elem = self.__object
+		elem = Data.getInstance(self.__object)
+		
 
 		"""
 		According to source code we have that sections:
@@ -69,33 +68,35 @@ class Section():
     	"""
 
     	#TODO - Combine in an OR clause the items that have the same writesize also use else if?
-		if isinstance(elem, StringIdItem)
+		if isinstance(elem, StringIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdItem.java#29
-			self.__write_size = 4
+			self.__instance_write_size = 4
+			self.__write_size = self.__instance_write_size * len(self.__data)
 
-		if isinstance(elem, TypeIdItem)
+		if isinstance(elem, TypeIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeIdItem.java#29
-			self.__write_size = 4
+			self.__instance_write_size = 4
+			self.__write_size = self.__instance_write_size * len(self.__data)
 
-		if isinstance(elem, ProtoIdItem)
+		if isinstance(elem, ProtoIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ProtoIdItem.java#32
-			self.__write_size = 12
+			self.__instance_write_size = 12
+			self.__write_size = self.__instance_write_size * len(self.__data)
 
-		if isinstance(elem, FieldIdItem)
+		if isinstance(elem, FieldIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#30
-			self.__write_size = 8
+			self.__instance_write_size = 8
+			self.__write_size = self.__instance_write_size * len(self.__data)
 
-		if isinstance(elem, MethodIdItem)
+		if isinstance(elem, MethodIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#30
-			self.__write_size = 8
+			self.__instance_write_size = 8
+			self.__write_size = self.__instance_write_size * len(self.__data)
 
-		if isinstance(elem, ClassDefItem)
+		if isinstance(elem, ClassDefItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDefItem.java#46
-			self.__write_size = 32
-
-		if isinstance(elem, StringDataItem):
-			#With a little luck, it might work ...
-			self.__callback = dispatcher['StringDataItem']
+			self.__instance_write_size = 32
+			self.__write_size = self.__instance_write_size * len(self.__data)
 
 
 
@@ -120,9 +121,13 @@ class Section():
         this.fileOffset = fileOffset;
         '''
 
+        '''
 		mask = self.__alignment - 1
 		file_off = ( file_off + mask ) & ~mask
-		self.__file_off = file_off
+		'''
+		res = Data.toAligned(self.__alignment, file_off)
+		self.__file_off = res
+		return res
 
 	def getFileOff(self):
 
@@ -139,7 +144,7 @@ class Section():
 
 	def getRawData(self):
 		
-		return self.data
+		return self.__data
 
 	def getAndroguardObj(self):
 
@@ -149,7 +154,96 @@ class Section():
 
 		return self.__is_modified
 
+	def setModified(value):
+
+		return self.__is_modified = value
+
+	def placeItems():
+		pass
+
+	def getWriteSize(self):
+
+		return self.__write_size
+
 	def writeTo(self):
 		#To be implemented
 		pass
 
+	def __prepareSection(self):
+
+
+
+
+
+class MixedSection(Section):
+
+	def __init__(self,self,name,alignment,data,andro_object, is_needed_in_header = False):
+
+		super().__init__(name,alignment,data,andro_object, is_needed_in_header)
+
+
+	def placeItems(self):
+
+		elem = Data.getInstance(self.__object)
+		writer_offset = 0
+
+
+		if isinstance(elem, StringDataItem):
+
+			# How convinient to have access to such great methods :)
+			for item in self.__object:
+				#https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1775
+				off = Data.toAligned(writer_offset)
+				item.set_off(off)
+				#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MixedItemSection.java#319
+				writer_offset = off + (writeuleb128(item.get_utf16_size) + len(item.get_data()) + 1)
+
+			#With a little luck, it might work ...
+			self.__callback = dispatcher['StringDataItem']
+		
+		elif isinstance(elem, ClassDataItem):
+
+			for item in self.__object:
+				off = Data.toAligned(writer_offset)
+				item.set_off(off)
+				#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MixedItemSection.java#319
+				#https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L3167
+				writer_offset = off + item.get_length()
+
+		elif isinstance(elem, TypeList):
+			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeListItem.java#48
+			self.__instance_write_size = 2
+			self.__write_size = len(self.__object.get_list() * self.__instance_write_size) + 4
+			'''
+			Androguard does not have at v2 functions or properties related
+			to offsets.
+			So, this :
+			for item in self.__object.get_list():
+				off = Data.toAligned(writer_offset)
+				item.off = off
+				writer_offset = off + self.__instance_write_size
+			Is not necessary for now.
+			'''
+
+		elif isinstance(elem, MapList):
+			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MapItem.java#32
+			self.__instance_write_size = 3 * 4
+			self.__write_size = len(self.__object.get_obj()) *  self.__instance_write_size
+			#Abuse of property - wish there was a function instead for optical pleasure :/
+			for item in self.__object.map_item:
+				off = Data.toAligned(writer_offset)
+				#Abuse of property again :/ :/
+				item.off = off
+				writer_offset = off + self.__instance_write_size
+
+
+
+		#Set  write size
+		if self.__write_size == 0:
+			self.__write_size = writer_offset
+
+
+	def prepareSection(self):
+
+		self.placeItems()
+		

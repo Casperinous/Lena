@@ -1,6 +1,9 @@
-from section import Section
+from androguard.core.bytecodes.dvm import TYPE_MAP_ITEM
+from section import Section, MixedSection
 from writer import Writer
-
+from utils import Data
+import copy
+#TYPE_MAP_ITEM 
 """
 Original structure of the Dex file after being generated:
 
@@ -131,37 +134,59 @@ class Dex:
 		self.type_list = self.__map.get_item_type("TYPE_TYPE_LIST")
 		if self.type_list:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#108
-			self.type_list = Section('type_list', 4, None, self.type_list )
+			self.type_list = MixedSection('type_list', 4, None, self.type_list )
 		else:
 			raise ValueError("TypeList section should not be None.")
 
 		self.string_data_items = self.__map.get_item_type("TYPE_STRING_DATA_ITEM")
 		if self.string_data_items:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#111
-			self.string_data_items = Section('string_data_items', 1, None, self.string_data_items)
+			self.string_data_items = MixedSection('string_data_items', 1, None, self.string_data_items)
 		else:
 			raise ValueError("StringData section should not be None.")
 
 		self.class_data_items = self.__map.get_item_type("TYPE_CLASS_DATA_ITEM")
 		if self.class_data_items:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#112
-			self.class_data_items = Section('class_data_items', 1, None, self.class_data_items)
+			self.class_data_items = MixedSection('class_data_items', 1, None, self.class_data_items)
 		else:
 			raise ValueError("ClassData section should not be None.")
 		
 
 		# The most important piece of the building process.
-		self.sec_map = Section('map', 4, None, self.__map)
+		# Must be initialized after all the items have been finalized in other sections.
+		#self.sec_map = MixedSection('map', 4, None, self.__map)
 		
 
 	def writeToDisk(self):
+		pass
 
 
 
 		
+	def saveSectionChanges(self, section):
 
+		andro_obj = section.getAndroguardObj()
+		if andro_obj:
+			mapped_obj = Data.getInstance(andro_obj)
+			if mapped_obj:
+				#Really, what i am thinking.
+				#Maybe the slowest, but i think it is unavoidable?
+				self.__map.get_item_type(TYPE_MAP_ITEM[mapped_obj.get_type()]) = copy.deepcopy(andro_obj)
+			
+
+
+
+	def addItemToSection(self,section,item):
+
+		#TODO - Must.check.for.None.Rly.
+		section.setModified(True)
+		section.addItem(item)
 
 	def prepareSections(self):
+		
+
+
 		"""
 		Well, being a noob in python and juding from
 		the fact that we have multiple and different
@@ -170,19 +195,24 @@ class Dex:
 		tions.
 		Dont.Judge.Me.
 		I dont like it either.
+
+		Also, all sections must have their items:
+		- placed
+		- saved in the original Androguard's map object
+		- have their offsets set.
 		"""
 
+		#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#501
+		offset = 0
 		for section in self.sections:
-		#Limit actions to sections that are modified
-		elem = None
-		if section.isModified():
-			if isinstance(sections.getAndroguardObj(), list):
-				elem = sections.getAndroguardObj()[0]
-				# It should not be empty, like really.
-			elem = sections.getAndroguardObj()
-			if isinstance(elem, StringDataItem ):
-				strings = sections.getAndroguardObj()
-				strings = self.__sortStringDataItems(strings)
+			if section.isModified():
+				#Well must be done.
+				self.saveSectionChanges(section)
+			placeAt = section.setFileOff(offset)
+			#There should be a lot of error checking, but it is late you know. Later.
+			section.placeItems()
+			# Well size is defined now so get it.
+			offset = placedAt + section.getWriteSize()
 
 
 

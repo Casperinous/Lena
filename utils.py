@@ -51,6 +51,21 @@ class Data:
     def toSignedShort(data):
         return struct.unpack('<h', data)
 
+    @staticmethod
+    def toAligned(aligment,offset):
+        mask = alignment - 1
+        return ( offset + mask ) & ~mask
+
+    @staticmethod
+    def getInstance(obj):
+        elem = None
+        if isinstance(obj, list):
+            elem = obj[0]
+        else
+            elem = obj
+        return elem
+
+
 
 
 
