@@ -71,31 +71,44 @@ class Section():
 		if isinstance(elem, StringIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdItem.java#29
 			self.__instance_write_size = 4
+			#Assign array of Items to .__data property
+			self.__data = self.__object
+			#Set write size
 			self.__write_size = self.__instance_write_size * len(self.__data)
 
 		if isinstance(elem, TypeIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeIdItem.java#29
 			self.__instance_write_size = 4
+			#Assign array of Items to .__data property
+			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
 
 		if isinstance(elem, ProtoIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ProtoIdItem.java#32
 			self.__instance_write_size = 12
+			#Assign array of Items to .__data property
+			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
 
 		if isinstance(elem, FieldIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#30
 			self.__instance_write_size = 8
+			#Assign array of Items to .__data property
+			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
 
 		if isinstance(elem, MethodIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#30
 			self.__instance_write_size = 8
+			#Assign array of Items to .__data property
+			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
 
 		if isinstance(elem, ClassDefItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDefItem.java#46
 			self.__instance_write_size = 32
+			#Assign array of Items to .__data property
+			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
 
 
@@ -119,10 +132,8 @@ class Section():
         int mask = alignment - 1;
         fileOffset = (fileOffset + mask) & ~mask;
         this.fileOffset = fileOffset;
-        '''
 
-        '''
-		mask = self.__alignment - 1
+        mask = self.__alignment - 1
 		file_off = ( file_off + mask ) & ~mask
 		'''
 		res = Data.toAligned(self.__alignment, file_off)
@@ -169,7 +180,14 @@ class Section():
 		#To be implemented
 		pass
 
-	def __prepareSection(self):
+	def prepareSection(self):
+		pass
+
+	def writeHeaderPart(self, writer):
+
+		writer.writeSignedInt(len(self.__data))
+		writer.writeSignedInt(self.getFileOff())
+
 
 
 
@@ -189,7 +207,7 @@ class MixedSection(Section):
 
 
 		if isinstance(elem, StringDataItem):
-
+			self.__data = self.__object
 			# How convinient to have access to such great methods :)
 			for item in self.__object:
 				#https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1775
@@ -202,7 +220,7 @@ class MixedSection(Section):
 			self.__callback = dispatcher['StringDataItem']
 		
 		elif isinstance(elem, ClassDataItem):
-
+			self.__data = self.__object
 			for item in self.__object:
 				off = Data.toAligned(writer_offset)
 				item.set_off(off)
@@ -211,9 +229,10 @@ class MixedSection(Section):
 				writer_offset = off + item.get_length()
 
 		elif isinstance(elem, TypeList):
+			self.__data = self.__object.get_list()
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeListItem.java#48
 			self.__instance_write_size = 2
-			self.__write_size = len(self.__object.get_list() * self.__instance_write_size) + 4
+			self.__write_size = len(self.__data * self.__instance_write_size) + 4
 			'''
 			Androguard does not have at v2 functions or properties related
 			to offsets.
@@ -226,11 +245,12 @@ class MixedSection(Section):
 			'''
 
 		elif isinstance(elem, MapList):
+			self.__data = self.__object.map_item
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MapItem.java#32
 			self.__instance_write_size = 3 * 4
 			self.__write_size = len(self.__object.get_obj()) *  self.__instance_write_size
 			#Abuse of property - wish there was a function instead for optical pleasure :/
-			for item in self.__object.map_item:
+			for item in self.__data:
 				off = Data.toAligned(writer_offset)
 				#Abuse of property again :/ :/
 				item.off = off

@@ -68,6 +68,22 @@ class Data:
 
 
 
+class ItemsIndexer:
+
+    @staticmethod
+    def indexOfStrData(arr, data):
+        idx = 0
+        for item in arr:
+            if item.get_data() == data:
+                break
+            idx = idx + 1
+
+        if idx == ( len(arr) - 1 ):
+            idx = -1
+
+        return idx
+
+
 
 class Generator:
 

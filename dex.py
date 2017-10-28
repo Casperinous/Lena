@@ -3,7 +3,7 @@ from section import Section, MixedSection
 from writer import Writer
 from utils import Data
 import copy
-#TYPE_MAP_ITEM 
+
 """
 Original structure of the Dex file after being generated:
 
@@ -92,42 +92,42 @@ class Dex:
 		self.strings_ids = self.__map.get_item_type("TYPE_STRING_ID_ITEM")
 		if self.strings_ids:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdsSection.java#46
-			self.strings_ids = Section('strings_ids', 4, None, self.strings_ids)
+			self.strings_ids = Section('strings_ids', 4, None, self.strings_ids, True)
 		else:
 			raise ValueError("StringIds section should not be None.")
 
 		self.type_ids = self.__map.get_item_type("TYPE_TYPE_ID_ITEM")
 		if self.type_ids:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeIdsSection.java#43
-			self.type_ids = Section('type_ids', 4, None, self.type_ids)
+			self.type_ids = Section('type_ids', 4, None, self.type_ids, True)
 		else:
 			raise ValueError("TypeIds section should not be None.")
 
 		self.proto_ids = self.__map.get_item_type("TYPE_PROTO_ID_ITEM")
 		if self.proto_ids:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ProtoIdsSection.java#43
-			self.proto_ids = Section('proto_ids', 4, None, self.proto_ids)
+			self.proto_ids = Section('proto_ids', 4, None, self.proto_ids, True)
 		else:
 			raise ValueError("ProtoIds section should not be None.")
 
 		self.field_ids = self.__map.get_item_type( "TYPE_FIELD_ID_ITEM" )
 		if self.field_ids:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdsSection.java#31
-			self.field_ids = Section('field_ids', 4, None, self.field_ids)
+			self.field_ids = Section('field_ids', 4, None, self.field_ids, True)
 		else:
 			raise ValueError("FieldIds section should not be None.")
 
 		self.method_ids = self.__map.get_item_type( "TYPE_METHOD_ID_ITEM" )
 		if self.method_ids:
 			##https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdsSection.java#31
-			self.method_ids = Section('method_ids', 4, None, self.method_ids)
+			self.method_ids = Section('method_ids', 4, None, self.method_ids, True)
 		else:
 			raise ValueError("MethodIds section should not be None.")
 
 		self.classes_def = self.__map.get_item_type( "TYPE_CLASS_DEF_ITEM" )
 		if self.classes_def:
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDefsSection.java#49
-			self.classes_def = Section('classes_def', 4, None, self.classes_def)
+			self.classes_def = Section('classes_def', 4, None, self.classes_def, True)
 		else:
 			raise ValueError("ClassDef section should not be None.")
 
@@ -221,3 +221,12 @@ class Dex:
 		if arr:
 			arr = sorted(arr, key=lambda item: item.data)
 		return arr
+
+
+	def getStringIdsSection(self):
+
+		return self.strings_ids
+
+	def getTypeIdsSection(self):
+
+		return self.type_ids
