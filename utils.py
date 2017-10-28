@@ -20,13 +20,11 @@ def stringToMutf8(string):
        out.write(bytes);
        out.writeByte(0);
    """
-
-
-str_length = len(string)
-arr.extend(writeuleb128(str_length))
-arr.extend(string)
-arr.extend('\0')
-return str(arr)
+    str_length = len(string)
+    arr.extend(writeuleb128(str_length))
+    arr.extend(string)
+    arr.extend('\0')
+    return str(arr)
 
 
 class Data:
