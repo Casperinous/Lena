@@ -1,7 +1,7 @@
 from androguard.core.bytecodes.dvm import TYPE_MAP_ITEM
 from section import Section, MixedSection
 from writer import Writer
-from utils import Data
+from utils import Data, ItemWriter, BufferWriter
 import copy
 
 """
@@ -55,7 +55,7 @@ class Dex:
 			raise ValueError("Section's map should not be None.")
 		self.__map = sections_map;
 
-		self.writer = Writer()
+		self.writer = BufferWriter()
 		"""
 		In order to build the Dex succesfully, we must follow the 
 		original order of the sections as it is used in Android's

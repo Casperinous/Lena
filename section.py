@@ -1,5 +1,8 @@
 from androguard.core.bytecodes.dvm import StringIdItem, TypeIdItem, ProtoIdItem, FieldIdItem, MethodIdItem, ClassDefItem
+from utils import SectionWriter
 from writer import dispatcher
+
+
 class Section():
 
 	def __init__(self,name,alignment,data,andro_object, is_needed_in_header = False):
@@ -75,6 +78,8 @@ class Section():
 			self.__data = self.__object
 			#Set write size
 			self.__write_size = self.__instance_write_size * len(self.__data)
+			#set write callback
+			self.__callback = SectionWriter.writeStringIdSection
 
 		if isinstance(elem, TypeIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeIdItem.java#29
@@ -82,6 +87,7 @@ class Section():
 			#Assign array of Items to .__data property
 			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
+			self.__callback = SectionWriter.writeTypeIdSection
 
 		if isinstance(elem, ProtoIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ProtoIdItem.java#32
@@ -89,6 +95,7 @@ class Section():
 			#Assign array of Items to .__data property
 			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
+			self.__callback = SectionWriter.writeProtoIdSection
 
 		if isinstance(elem, FieldIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#30
@@ -96,6 +103,7 @@ class Section():
 			#Assign array of Items to .__data property
 			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
+			self.__callback = SectionWriter.writeFieldIdSection
 
 		if isinstance(elem, MethodIdItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#30
@@ -103,6 +111,7 @@ class Section():
 			#Assign array of Items to .__data property
 			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
+			self.__callback = SectionWriter.writeMethodIdSection
 
 		if isinstance(elem, ClassDefItem):
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDefItem.java#46
@@ -110,6 +119,7 @@ class Section():
 			#Assign array of Items to .__data property
 			self.__data = self.__object
 			self.__write_size = self.__instance_write_size * len(self.__data)
+			self.__callback = SectionWriter.writeClassDefSection
 
 
 
@@ -208,6 +218,7 @@ class MixedSection(Section):
 
 		if isinstance(elem, StringDataItem):
 			self.__data = self.__object
+			self.__callback = SectionWriter.writeStringDataSection
 			# How convinient to have access to such great methods :)
 			for item in self.__object:
 				#https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1775
@@ -221,6 +232,7 @@ class MixedSection(Section):
 		
 		elif isinstance(elem, ClassDataItem):
 			self.__data = self.__object
+			self.__callback = SectionWriter.writeClassDataSection
 			for item in self.__object:
 				off = Data.toAligned(writer_offset)
 				item.set_off(off)
@@ -230,6 +242,7 @@ class MixedSection(Section):
 
 		elif isinstance(elem, TypeList):
 			self.__data = self.__object.get_list()
+			self.__callback = SectionWriter.writeTypeListSection
 			#https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeListItem.java#48
 			self.__instance_write_size = 2
 			self.__write_size = len(self.__data * self.__instance_write_size) + 4
