@@ -1,13 +1,11 @@
-
-
-''' 
+'''
 Code originally used by Androguard in https://github.com/androguard/androguard/blob/master/androguard/core/bytecode.py#L714
 representing a different entity. Due to our simplier logic, we combine these 3 classes into one
 '''
-class Buffer:
 
+
+class Buffer:
     def __init__(self, buff):
-        
         """
         Badly, the stable version of Androguard is v2.0 which was
         published 2-3 years ago. That being said, the source code
