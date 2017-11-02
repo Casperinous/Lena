@@ -1,13 +1,14 @@
 from androguard.core.bytecodes.dvm import StringIdItem, TypeIdItem, ProtoIdItem, FieldIdItem, MethodIdItem, ClassDefItem
 from utils import SectionWriter
 from writer import dispatcher
+from items import OffsettedItem
 
 
-class Section():
+class Section(OffsettedItem):
     def __init__(self, name, alignment, data, andro_object, is_needed_in_header=False):
 
+        super().__init__(alignment)
         self.__name = name
-        self.__alignment = alignment
         # this is the raw data for sections which we dont change
         if data:
             self.__data = data
@@ -18,12 +19,6 @@ class Section():
         or one class like the HeaderItem
         """
         self.__object = andro_object
-        # should be set later on during the write process
-        self.__file_off = 0
-        # Should be computed based on the available data
-        self.__write_size = 0
-        # Check the instance write size in disk
-        self.__instance_write_size = 0
         # Check if modified.
         self.__is_modified = False
         # Check if contributes to header's data
@@ -118,39 +113,6 @@ class Section():
             self.__write_size = self.__instance_write_size * len(self.__data)
             self.__callback = SectionWriter.writeClassDefSection
 
-    def setFileOff(self, file_off):
-
-        '''
-        Straight from the Android's source code, mapping one to one
-        the java code to the python one.
-        -----------------------------------------------------------
-
-
-        if (fileOffset < 0) {
-            throw new IllegalArgumentException("fileOffset < 0");
-        }
-        if (this.fileOffset >= 0) {
-            throw new RuntimeException("fileOffset already set");
-        }
-        int mask = alignment - 1;
-        fileOffset = (fileOffset + mask) & ~mask;
-        this.fileOffset = fileOffset;
-
-        mask = self.__alignment - 1
-        file_off = ( file_off + mask ) & ~mask
-        '''
-        res = Data.toAligned(self.__alignment, file_off)
-        self.__file_off = res
-        return res
-
-    def getFileOff(self):
-
-        return self.__file_off
-
-    def getAbsFileOff(relative):
-
-        return self.__file_off + relative
-
     def addItem(self, obj):
         # We assume that, we have a list of same objects.
         if isinstance(self.__object, list):
@@ -174,10 +136,6 @@ class Section():
 
     def placeItems():
         pass
-
-    def getWriteSize(self):
-
-        return self.__write_size
 
     def writeTo(self):
         # To be implemented
