@@ -216,3 +216,10 @@ class Dex:
     def getTypeIdsSection(self):
 
         return self.type_ids
+
+    def getSectionArr(self):
+
+        return self.sections
+
+
+
