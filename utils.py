@@ -1,6 +1,7 @@
 import struct
 from androguard.core.bytecodes.dvm import writeuleb128, StringDataItem
 from androguard.core import bytecode
+from items import MapItem
 
 
 def stringToMutf8(string):
@@ -28,6 +29,7 @@ def stringToMutf8(string):
 
 
 class Data:
+
     @staticmethod
     def toUnsignedInt(data):
         return struct.unpack('<I', data)
@@ -60,6 +62,7 @@ class Data:
 
 
 class ItemsIndexer:
+
     @staticmethod
     def indexOfStrData(arr, data):
         idx = 0
@@ -75,8 +78,8 @@ class ItemsIndexer:
 
 
 class Generator:
-    @staticmethod
 
+    @staticmethod
     """
     Simplified creation of an instance of StringDataItem
     with just a custom buffer.
@@ -90,3 +93,24 @@ class Generator:
             item = StringDataItem(buff, None)
 
         return item
+
+
+class DexUtils:
+
+    @staticmethod
+    def groupMapSections(dex):
+
+        items = []
+        for section in dex.getSectionArr():
+            if not isinstance(section, MapList):
+                arr = section.getRawData()
+                item = None
+                if isinstance(arr, list):
+
+                    size = len(arr)
+                    item = MapItem(section, arr[0], arr[-1], size)
+                else:
+
+                    item = MapItem(section, arr, arr, 1)
+                items.append(item)
+        return items
