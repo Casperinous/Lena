@@ -1,15 +1,16 @@
-from utils import Data, ItemIndexer
+from utils import Data, ItemIndexer, DexUtils
 
 """
 Experimental implementation of a dict with functions
 associated with the kind of class the __object prope-
-rty is pointed to in the Section class. It is kind 
+rty is pointed to in the Section class. It is kind
 like reflection, but it is not.
 Any other suggestion would be considered a gift.
 """
 
 
 class ItemWriter:
+
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdItem.java#99
     def writeStringIdItem(dex, item):
@@ -82,104 +83,172 @@ class ItemWriter:
         out.writeByte(0);
         """
 
-    dex.getWriter().writeBytes(writeuleb128(item.get_utf16_size()))
-    dex.getWriter().writeBytes(item.get_data())
-    dex.getWriter().writeZeroes(1)
+        dex.getWriter().writeBytes(writeuleb128(item.get_utf16_size()))
+        dex.getWriter().writeBytes(item.get_data())
+        dex.getWriter().writeZeroes(1)
 
+    @staticmethod
+    def writeMapItem(dex, item):
+        # Have to implement google's logic here
+        # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MapItem.java#80
+        offset = 0
+        fitem = item.getFirstItem()
+        if fitem:
+            offset = item.getSection().getAbsFileOff(fitem.get_off())
+        else:
+            offset = item.getSection().getFileOff()
 
-@staticmethod
-def writeMapItem(dex, item):
-    # Have to implement google's logic here
-    # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MapItem.java#80
-    pass
+        # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MapItem.java#210
+        dex.getWriter().writeSignedShort(item.getSection().getTypeId(), True)
+        dex.getWriter().writeSignedShort(0, True)
+        dex.getWriter().writeSignedInt(item.getItemCount(), True)
+        dex.getWriter().writeSignedInt(offset, True)
 
 
 class SectionWriter:
-    @staticmethod
-    def writeStringIdSection(items, dex):
 
+    @classmethod
+    def checkWriterValidity(dex, section):
+        writer = dex.getWriter()
+        writer.alignTo(section.getAligment())
+        Data.checkAligmentValidity(writer.getCursor(), section.getFileOff())
+
+
+    @staticmethod
+    def writeStringIdSection(items, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeStringIdItem(dex, item)
 
     @staticmethod
-    def writeTypeIdSection(items, dex):
+    def writeTypeIdSection(items, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeTypeIdItem(dex, item)
 
     @staticmethod
-    def writeProtoIdSection(items, dex):
+    def writeProtoIdSection(items, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeProtoIdItem(dex, item)
 
     @staticmethod
-    def writeFieldIdSection(items, dex):
+    def writeFieldIdSection(items, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeFieldIdItem(dex, item)
 
     @staticmethod
-    def writeMethodIdSection(items, dex):
+    def writeMethodIdSection(items, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeMethodIdItem(dex, item)
 
     @staticmethod
-    def writeClassDefSection(items, dex):
+    def writeClassDefSection(items, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeClassDefItem(dex, item)
 
     @staticmethod
-    def writeTypeListSection(items, dex):
+    def writeTypeListSection(items, section, dex):
         # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeListItem.java#107
+        SectionWriter.checkWriterValidity(dex, section)
         dex.getWriter().writeSignedInt(len(items))
         for item in items:
             ItemWriter.writeTypeItem(dex, item)
 
     @staticmethod
-    def writeStringDataSection(items, dex):
+    def writeStringDataSection(items, section, dex):
 
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeStringDataItem(dex, item)
 
     @staticmethod
-    def writeClassDataSection(items, dex):
+    def writeClassDataSection(items, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
         for item in items:
             ItemWriter.writeClassDataItem(dex, item)
 
+    @staticmethod
+    def writeMapItemSection(map_sec, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
+        # If we passed, we are Jedi Knights !
+        items = DexUtils.groupMapSections(dex)
+        if items and len(items) > 0:
+            writer.writeSignedInt(len(items), True)
+            for item in items:
+                ItemWriter.writeMapItem(dex, item)
 
-class BufferWriter():
-    def __init__(size=None):
 
-        if size:
-            self._array = bytearray(size)
-        else
-            self._array = bytearray()
+class Buffer:
+
+    def __init__(size):
+
+        self.__buffer = bytearray(size)
+
+        self.__size = size
+
+        self.__idx = 0
+
+    def alignToOff(self, aligment, offset):
+
+        self.__idx = Data.toAligned(aligment, offset)
+
+    def alignTo(self, aligment):
+
+        self.__idx = Data.toAligned(aligment, self.__idx)
+
+    def setCursor(self, offset):
+
+        if offset > self.__size:
+            raise Exception("Offset bigger than buffer's size")
+        self.__idx = offset
+
+    def getCursor(self):
+
+        return self.__idx
+
+
+class BufferWriter(Buffer):
+
+    def __init__(size):
+
+        super().__init__(size)
 
     def writeUnsignedInt(self, data, packed=False):
         if packed:
             data = Data.toUnsignedInt(data)
 
-        self._array.extend(data)
+        self.__buffer[self.__idx: self.__idx + len(data)] = data
+        self.__idx += len(data)
 
     def writeSignedInt(self, data, packed=False):
         if packed:
             data = Data.toSignedInt(data)
 
-        self._array.extend(data)
+        self.__buffer[self.__idx: self.__idx + len(data)] = data
+        self.__idx += len(data)
 
     def writeUnsignedShort(self, data, packed=False):
         if packed:
             data = Data.toUnsignedShort(data)
 
-        self._array.extend(data)
+        self.__buffer[self.__idx: self.__idx + len(data)] = data
+        self.__idx += len(data)
 
     def writeSignedShort(self, data, packed=False):
         if packed:
             data = Data.toSignedShort(packed)
 
-        self._array.extend(data)
+        self.__buffer[self.__idx: self.__idx + len(data)] = data
+        self.__idx += len(data)
 
     def writeBytes(self, data):
 
-        self._array.extend(data)
+        self.__buffer[self.__idx: self.__idx + len(data)] = data
+        self.__idx += len(data)
 
     def writeZeroes(self, num):
         for i in range(0, num):
@@ -187,4 +256,4 @@ class BufferWriter():
 
     def finalize(self, filename):
         with open(filename, 'wb') as f:
-            f.write(self._array)
+            f.write(self.__buffer)
