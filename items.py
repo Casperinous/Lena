@@ -50,6 +50,10 @@ class OffsettedItem:
 
         return self.__write_size
 
+    def getAligment(self):
+
+    	return self.__alignment
+
 
 class MapItem(OffsettedItem):
 
@@ -81,6 +85,28 @@ class MapItem(OffsettedItem):
 		self.__first_item = first_item
 		self.__last_item = last_item
 		self.__item_count = item_count
+
+
+
+	def getItemCount(self):
+
+		return self.__item_count
+
+	def getFirstItem(self):
+
+		return self.__first_item
+
+	def getLastItem(self):
+
+		return self.__last_item
+
+	def getSection(self):
+
+		return self.__section
+		
+	def writeTo(writer):
+		# For now pass, later will be assigned the SectionWriter.method
+		pass
 
 
 
