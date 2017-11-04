@@ -1,0 +1,16 @@
+[*] map = new MixedItemSection("map", this, 4, SortType.NONE); -> Have no items yet.
+ |
+ |
+ ------> Filled by MapItem.addMap with a type of UniformListItem<MapItem>(ItemType.TYPE_MAP_LIST, items));
+ |
+ |
+ ------> prepare method does not seem to do anything.
+ |
+ |
+ ------> [*] placeItems seems to place items according to the method place, implemented in OffsettedItem class.
+          |  In this case, it actually writes the UniformList offset and then, it loops through every object (MapItem)
+          |  of the list and sets it's offset in relation with list's offset.
+          |
+          |
+          ---------> MapItem overrides the place0 function, thus using the offset which was set from the
+                     original place method in order to set item's one.
