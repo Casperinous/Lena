@@ -6,7 +6,7 @@ from items import OffsettedItem
 
 class Section(OffsettedItem):
 
-    def __init__(self, name, alignment, data, andro_object, is_needed_in_header=False):
+    def __init__(self, typeid, name, alignment, data, andro_object, is_needed_in_header=False):
 
         super().__init__(alignment)
         self.__name = name
@@ -27,8 +27,12 @@ class Section(OffsettedItem):
         # Experimental Implementation of a callback function to be used when we
         # are writing content in disk.
         self.__callback = None
+        # Expected a short number here.
+        self.__typeid = typeid
 
-    def _calculateWriteSize(self):
+
+
+    def _placeItems(self):
 
         elem = Data.getInstance(self.__object)
 
@@ -118,8 +122,8 @@ class Section(OffsettedItem):
 
     def addItem(self, obj):
         # We assume that, we have a list of same objects.
-        if isinstance(self.__object, list):
-            self.__object.append(obj)
+        if isinstance(self.__data, list):
+            self.__data.append(obj)
 
     def getRawData(self):
 
@@ -137,6 +141,10 @@ class Section(OffsettedItem):
 
         return self.__is_modified = value
 
+    def getTypeId(self):
+
+        return self.__typeid
+
     def placeItems():
         pass
 
@@ -145,21 +153,19 @@ class Section(OffsettedItem):
         pass
 
     def prepareSection(self):
-        pass
+        self._placeItems()
 
     def writeHeaderPart(self, writer):
-
-        writer.writeSignedInt(len(self.__data))
-        writer.writeSignedInt(self.getFileOff())
+        pass
 
 
 class MixedSection(Section):
 
-    def __init__(self, self, name, alignment, data, andro_object, is_needed_in_header=False):
+    def __init__(self, typeid, name, alignment, data, andro_object, is_needed_in_header=False):
 
-        super().__init__(name, alignment, data, andro_object, is_needed_in_header)
+        super().__init__(typeid, name, alignment, data, andro_object, is_needed_in_header)
 
-    def placeItems(self):
+    def _placeItems(self):
 
         elem = Data.getInstance(self.__object)
         writer_offset = 0
@@ -170,20 +176,20 @@ class MixedSection(Section):
             # How convinient to have access to such great methods :)
             for item in self.__object:
                 # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1775
-                off = Data.toAligned(writer_offset)
+                off = Data.toAligned(self.__aligment, writer_offset)
                 item.set_off(off)
                 # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MixedItemSection.java#319
                 writer_offset = off + \
                     (writeuleb128(item.get_utf16_size) + len(item.get_data()) + 1)
 
             # With a little luck, it might work ...
-            self.__callback = dispatcher['StringDataItem']
+            self.__callback = SectionWriter.writeStringDataSection
 
         elif isinstance(elem, ClassDataItem):
             self.__data = self.__object
             self.__callback = SectionWriter.writeClassDataSection
             for item in self.__object:
-                off = Data.toAligned(writer_offset)
+                off = Data.toAligned(self.__aligment, writer_offset)
                 item.set_off(off)
                 # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MixedItemSection.java#319
                 # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L3167
@@ -211,12 +217,13 @@ class MixedSection(Section):
             self.__data = self.__object.map_item
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MapItem.java#32
             self.__instance_write_size = 3 * 4
+            self.__callback = Section.writeMapItemSection
             self.__write_size = len(
                 self.__object.get_obj()) * self.__instance_write_size
             # Abuse of property - wish there was a function instead for optical
             # pleasure :/
             for item in self.__data:
-                off = Data.toAligned(writer_offset)
+                off = Data.toAligned(self.__aligment, writer_offset)
                 # Abuse of property again :/ :/
                 item.off = off
                 writer_offset = off + self.__instance_write_size
@@ -226,4 +233,9 @@ class MixedSection(Section):
             self.__write_size = writer_offset
 
     def prepareSection(self):
-        self.placeItems()
+        self._placeItems()
+
+    def writeHeaderPart(self, writer):
+
+        writer.writeSignedInt(len(self.__data))
+        writer.writeSignedInt(self.getFileOff())
