@@ -31,20 +31,35 @@ def stringToMutf8(string):
 class Data:
 
     @staticmethod
-    def toUnsignedInt(data):
+    def fromUnsignedInt(data):
         return struct.unpack('<I', data)
 
     @staticmethod
-    def toSignedInt(data):
+    def fromSignedInt(data):
         return struct.unpack('<i', data)
 
     @staticmethod
-    def toUnsignedShort(data):
+    def fromUnsignedShort(data):
         return struct.unpack('<H', data)
 
     @staticmethod
-    def toSignedShort(data):
+    def fromSignedShort(data):
         return struct.unpack('<h', data)
+
+    def toUnsignedInt(data):
+        return struct.pack('<I', data)
+
+    @staticmethod
+    def toSignedInt(data):
+        return struct.pack('<i', data)
+
+    @staticmethod
+    def toUnsignedShort(data):
+        return struct.pack('<H', data)
+
+    @staticmethod
+    def toSignedShort(data):
+        return struct.pack('<h', data)
 
     @staticmethod
     def toAligned(aligment, offset):
@@ -59,6 +74,12 @@ class Data:
         else
             elem = obj
         return elem
+
+    @staticmethod
+    def checkAligmentValidity(cursor, offset, name):
+
+        if cursor != offset:
+            raise Exception("Oh my god! Aligment mismatching {0} at {1} expecting {2}".format(name, cursor, offset))
 
 
 class ItemsIndexer:
