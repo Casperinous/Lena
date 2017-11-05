@@ -1,19 +1,21 @@
 from androguard.core.bytecodes.dvm import StringIdItem, TypeIdItem, ProtoIdItem, FieldIdItem, MethodIdItem, ClassDefItem
-from utils import SectionWriter
-from writer import dispatcher
+#from utils import SectionWriter
 from items import OffsettedItem
+from utils import Data
+from writer import SectionWriter
 
 
 class Section(OffsettedItem):
 
     def __init__(self, typeid, name, alignment, data, andro_object, is_needed_in_header=False):
 
-        super().__init__(alignment)
+        super(Section, self).__init__(alignment)
+        print self.__alignment
         self.__name = name
         # this is the raw data for sections which we dont change
         if data:
             self.__data = data
-        else
+        else:
             self.__data = None
         """
         Object could be a list of Androguard's class (list of proto_ids) 
@@ -133,13 +135,13 @@ class Section(OffsettedItem):
 
         return self.__object
 
-    def isModified():
+    def isModified(self):
 
         return self.__is_modified
 
     def setModified(value):
 
-        return self.__is_modified = value
+        self.__is_modified = value
 
     def getTypeId(self):
 
@@ -161,12 +163,15 @@ class Section(OffsettedItem):
 
 class MixedSection(Section):
 
+    """
     def __init__(self, typeid, name, alignment, data, andro_object, is_needed_in_header=False):
 
-        super().__init__(typeid, name, alignment, data, andro_object, is_needed_in_header)
+        super(MixedSection, self).__init__(typeid, name, alignment, data, andro_object, is_needed_in_header)
+    """
 
     def _placeItems(self):
 
+        
         elem = Data.getInstance(self.__object)
         writer_offset = 0
 

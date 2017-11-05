@@ -1,7 +1,7 @@
 import struct
 from androguard.core.bytecodes.dvm import writeuleb128, StringDataItem
 from androguard.core import bytecode
-from items import MapItem
+#from items import MapItem
 
 
 def stringToMutf8(string):
@@ -63,7 +63,7 @@ class Data:
 
     @staticmethod
     def toAligned(aligment, offset):
-        mask = alignment - 1
+        mask = aligment - 1
         return (offset + mask) & ~mask
 
     @staticmethod
@@ -71,7 +71,7 @@ class Data:
         elem = None
         if isinstance(obj, list):
             elem = obj[0]
-        else
+        else:
             elem = obj
         return elem
 
@@ -79,7 +79,8 @@ class Data:
     def checkAligmentValidity(cursor, offset, name):
 
         if cursor != offset:
-            raise Exception("Oh my god! Aligment mismatching {0} at {1} expecting {2}".format(name, cursor, offset))
+            raise Exception("Oh my god! Aligment mismatching {0} at {1} expecting {2}".format(
+                name, cursor, offset))
 
 
 class ItemsIndexer:
@@ -100,12 +101,11 @@ class ItemsIndexer:
 
 class Generator:
 
-    @staticmethod
     """
     Simplified creation of an instance of StringDataItem
     with just a custom buffer.
     """
-
+    @staticmethod
     def StringDataItem(string):
         mut8_str = stringToMutf8(string)
         buff = bytecode._Bytecode(mut8_str)

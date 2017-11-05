@@ -1,7 +1,6 @@
 from androguard.core.bytecodes.dvm import TYPE_MAP_ITEM
 from section import Section, MixedSection
-from writer import Writer
-from utils import Data, ItemWriter, BufferWriter
+from writer import BufferWriter
 import copy
 
 """
@@ -55,7 +54,7 @@ class Dex:
             raise ValueError("Section's map should not be None.")
         self.__map = sections_map
 
-        self.writer = BufferWriter()
+        self.__writer = None
         """
         In order to build the Dex succesfully, we must follow the 
         original order of the sections as it is used in Android's
@@ -64,8 +63,8 @@ class Dex:
         P.S We do not care about word_data.
         """
 
-    def __initSections(self):
-        self.__parseSections()
+    def initSections(self):
+        self._parseSections()
         self.sections = [
             self.header,
             self.strings_ids,
@@ -77,69 +76,71 @@ class Dex:
             self.type_list,
             self.string_data_items,
             self.class_data_items,
-            self.sec_map
+            #self.sec_map
         ]
 
-    def __parseSections(self):
+    def _parseSections(self):
 
         self.header = self.__map.get_item_type("TYPE_HEADER_ITEM")
         if self.header:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/HeaderSection.java#38
-            self.header = Section('header', 4, None, self.header)
+            self.header = Section(0x00, 'header', 4, None, self.header)
         else:
             raise ValueError("Header section should not be None.")
 
         self.strings_ids = self.__map.get_item_type("TYPE_STRING_ID_ITEM")
         if self.strings_ids:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdsSection.java#46
-            self.strings_ids = Section(
-                'strings_ids', 4, None, self.strings_ids, True)
+            self.strings_ids = Section(0x01,
+                                       'strings_ids', 4, None, self.strings_ids, True)
         else:
             raise ValueError("StringIds section should not be None.")
 
         self.type_ids = self.__map.get_item_type("TYPE_TYPE_ID_ITEM")
         if self.type_ids:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeIdsSection.java#43
-            self.type_ids = Section('type_ids', 4, None, self.type_ids, True)
+            self.type_ids = Section(
+                0x02, 'type_ids', 4, None, self.type_ids, True)
         else:
             raise ValueError("TypeIds section should not be None.")
 
         self.proto_ids = self.__map.get_item_type("TYPE_PROTO_ID_ITEM")
         if self.proto_ids:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ProtoIdsSection.java#43
-            self.proto_ids = Section(
-                'proto_ids', 4, None, self.proto_ids, True)
+            self.proto_ids = Section(0x03,
+                                     'proto_ids', 4, None, self.proto_ids, True)
         else:
             raise ValueError("ProtoIds section should not be None.")
 
         self.field_ids = self.__map.get_item_type("TYPE_FIELD_ID_ITEM")
         if self.field_ids:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdsSection.java#31
-            self.field_ids = Section(
-                'field_ids', 4, None, self.field_ids, True)
+            self.field_ids = Section(0x04,
+                                     'field_ids', 4, None, self.field_ids, True)
         else:
             raise ValueError("FieldIds section should not be None.")
 
         self.method_ids = self.__map.get_item_type("TYPE_METHOD_ID_ITEM")
         if self.method_ids:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdsSection.java#31
-            self.method_ids = Section(
-                'method_ids', 4, None, self.method_ids, True)
+            self.method_ids = Section(0x05,
+                                      'method_ids', 4, None, self.method_ids, True)
         else:
             raise ValueError("MethodIds section should not be None.")
 
         self.classes_def = self.__map.get_item_type("TYPE_CLASS_DEF_ITEM")
         if self.classes_def:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDefsSection.java#49
-            self.classes_def = Section(
-                'classes_def', 4, None, self.classes_def, True)
+            self.classes_def = Section(0x06,
+                                       'classes_def', 4, None, self.classes_def, True)
         else:
             raise ValueError("ClassDef section should not be None.")
 
         self.type_list = self.__map.get_item_type("TYPE_TYPE_LIST")
         if self.type_list:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#108
-            self.type_list = MixedSection('type_list', 4, None, self.type_list)
+            self.type_list = MixedSection(
+                0x1001, 'type_list', 4, None, self.type_list)
         else:
             raise ValueError("TypeList section should not be None.")
 
@@ -147,8 +148,8 @@ class Dex:
             "TYPE_STRING_DATA_ITEM")
         if self.string_data_items:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#111
-            self.string_data_items = MixedSection(
-                'string_data_items', 1, None, self.string_data_items)
+            self.string_data_items = MixedSection(0x2002,
+                                                  'string_data_items', 1, None, self.string_data_items)
         else:
             raise ValueError("StringData section should not be None.")
 
@@ -156,8 +157,8 @@ class Dex:
             "TYPE_CLASS_DATA_ITEM")
         if self.class_data_items:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#112
-            self.class_data_items = MixedSection(
-                'class_data_items', 1, None, self.class_data_items)
+            self.class_data_items = MixedSection(0x2000,
+                                                 'class_data_items', 1, None, self.class_data_items)
         else:
             raise ValueError("ClassData section should not be None.")
 
@@ -176,7 +177,9 @@ class Dex:
             if mapped_obj:
                 # Really, what i am thinking.
                 # Maybe the slowest, but i think it is unavoidable?
-                self.__map.get_item_type(TYPE_MAP_ITEM[mapped_obj.get_type()]) = copy.deepcopy(andro_obj)
+                # self.__map.get_item_type(TYPE_MAP_ITEM[mapped_obj.get_type()])
+                # = copy.deepcopy(andro_obj)
+                pass
 
     def addItemToSection(self, section, item):
 
@@ -206,12 +209,16 @@ class Dex:
             if section.isModified():
                 # Well must be done.
                 self.saveSectionChanges(section)
-            placeAt = section.setFileOff(offset)
+            placedAt = section.setFileOff(offset)
             # There should be a lot of error checking, but it is late you know.
             # Later.
-            section.placeItems()
+            section.prepareSection()
             # Well size is defined now so get it.
             offset = placedAt + section.getWriteSize()
+
+        if offset > 0:
+            print "Dex's size {0}".format(offset)
+            self.__writer = BufferWriter(offset)
 
     def __sortStringDataItems(self, arr):
         if arr:

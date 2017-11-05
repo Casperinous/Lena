@@ -1,66 +1,68 @@
 from utils import Data
 
 
-class OffsettedItem:
+class OffsettedItem(object):
 
 	def __init__(self, alignment):
 
+		super(OffsettedItem, self).__init__()
 		self.__alignment = alignment
 		# should be set later on during the write process
-        self.__file_off = 0
-        # Should be computed based on the available data
-        self.__write_size = 0
-        # Check the instance write size in disk
-        self.__instance_write_size = 0
+		self.__file_off = 0
+		# Should be computed based on the available data
+		self.__write_size = 0
+		# Check the instance write size in disk
+		self.__instance_write_size = 0
 
-    def setFileOff(self, file_off):
+	def setFileOff(self, file_off):
+		"""
+		Straight from the Android's source code, mapping one to one
+		the java code to the python one.
+		-----------------------------------------------------------
 
-        '''
-        Straight from the Android's source code, mapping one to one
-        the java code to the python one.
-        -----------------------------------------------------------
 
+		if (fileOffset < 0) {
+		    throw new IllegalArgumentException("fileOffset < 0");
+		}
+		if (this.fileOffset >= 0) {
+		    throw new RuntimeException("fileOffset already set");
+		}
+		int mask = alignment - 1;
+		fileOffset = (fileOffset + mask) & ~mask;
+		this.fileOffset = fileOffset;
 
-        if (fileOffset < 0) {
-            throw new IllegalArgumentException("fileOffset < 0");
-        }
-        if (this.fileOffset >= 0) {
-            throw new RuntimeException("fileOffset already set");
-        }
-        int mask = alignment - 1;
-        fileOffset = (fileOffset + mask) & ~mask;
-        this.fileOffset = fileOffset;
+		mask = self.__alignment - 1
+		file_off = ( file_off + mask ) & ~mask
+		"""
+		res = Data.toAligned(self.__alignment, file_off)
 
-        mask = self.__alignment - 1
-        file_off = ( file_off + mask ) & ~mask
-        '''
-        res = Data.toAligned(self.__alignment, file_off)
-        self.__file_off = res
-        return res
+		self.__file_off = res
 
-    def getFileOff(self):
+		return res
 
-        return self.__file_off
+	def getFileOff(self):
 
-    def getAbsFileOff(relative):
+		return self.__file_off
 
-        return self.__file_off + relative
+	def getAbsFileOff(relative):
 
-    def getWriteSize(self):
+		return self.__file_off + relative
 
-        return self.__write_size
+	def getWriteSize(self):
 
-    def getAligment(self):
+		return self.__write_size
 
-    	return self.__alignment
+	def getAligment(self):
+
+		return self.__alignment
 
 
 class MapItem(OffsettedItem):
 
-	def __init__(self, name_type, section, first_item, last_item, item_count ):
+    def __init__(self, name_type, section, first_item, last_item, item_count):
 
-		super().__init__(3*4)
-		'''
+        super(MapItem, self).__init__(3 * 4)
+        '''
 		private final ItemType type;
 		/** {@code non-null;} section this instance covers */
 		private final Section section;
@@ -80,33 +82,28 @@ class MapItem(OffsettedItem):
 		*/
 		private final int itemCount;
 		'''
-		self.__type = name_type
-		self.__section = section
-		self.__first_item = first_item
-		self.__last_item = last_item
-		self.__item_count = item_count
+        self.__type = name_type
+        self.__section = section
+        self.__first_item = first_item
+        self.__last_item = last_item
+        self.__item_count = item_count
 
+    def getItemCount(self):
 
+        return self.__item_count
 
-	def getItemCount(self):
+    def getFirstItem(self):
 
-		return self.__item_count
+        return self.__first_item
 
-	def getFirstItem(self):
+    def getLastItem(self):
 
-		return self.__first_item
+        return self.__last_item
 
-	def getLastItem(self):
+    def getSection(self):
 
-		return self.__last_item
+        return self.__section
 
-	def getSection(self):
-
-		return self.__section
-		
-	def writeTo(writer):
-		# For now pass, later will be assigned the SectionWriter.method
-		pass
-
-
-
+    def writeTo(writer):
+        # For now pass, later will be assigned the SectionWriter.method
+        pass
