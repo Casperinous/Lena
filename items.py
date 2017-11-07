@@ -5,14 +5,14 @@ class OffsettedItem(object):
 
 	def __init__(self, alignment):
 
-		super(OffsettedItem, self).__init__()
-		self.__alignment = alignment
+		#super(OffsettedItem, self).__init__()
+		self.alignment = alignment
 		# should be set later on during the write process
-		self.__file_off = 0
+		self.file_off = 0
 		# Should be computed based on the available data
-		self.__write_size = 0
+		self.write_size = 0
 		# Check the instance write size in disk
-		self.__instance_write_size = 0
+		self.instance_write_size = 0
 
 	def setFileOff(self, file_off):
 		"""
@@ -31,30 +31,30 @@ class OffsettedItem(object):
 		fileOffset = (fileOffset + mask) & ~mask;
 		this.fileOffset = fileOffset;
 
-		mask = self.__alignment - 1
+		mask = self.alignment - 1
 		file_off = ( file_off + mask ) & ~mask
 		"""
-		res = Data.toAligned(self.__alignment, file_off)
+		res = Data.toAligned(self.alignment, file_off)
 
-		self.__file_off = res
+		self.file_off = res
 
 		return res
 
 	def getFileOff(self):
 
-		return self.__file_off
+		return self.file_off
 
 	def getAbsFileOff(relative):
 
-		return self.__file_off + relative
+		return self.file_off + relative
 
 	def getWriteSize(self):
 
-		return self.__write_size
+		return self.write_size
 
 	def getAligment(self):
 
-		return self.__alignment
+		return self.alignment
 
 
 class MapItem(OffsettedItem):
