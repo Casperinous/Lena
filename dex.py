@@ -167,7 +167,10 @@ class Dex:
         # self.sec_map = MixedSection('map', 4, None, self.__map)
 
     def writeToDisk(self):
-        pass
+        for section in self.sections:
+            section.writeTo(self)
+
+        self.__writer.finalize('Semi-Test.bin')
 
     def saveSectionChanges(self, section):
 
@@ -215,6 +218,7 @@ class Dex:
             section.prepareSection()
             # Well size is defined now so get it.
             offset = placedAt + section.getWriteSize()
+            print '{0} ends at offset {1}'.format(section.getName(), offset)
 
         if offset > 0:
             print "Dex's size {0}".format(offset)
@@ -224,6 +228,10 @@ class Dex:
         if arr:
             arr = sorted(arr, key=lambda item: item.data)
         return arr
+
+    def getWriter(self):
+
+        return self.__writer
 
     def getStringIdsSection(self):
 
