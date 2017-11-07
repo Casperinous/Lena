@@ -70,6 +70,7 @@ class Data:
     def getInstance(obj):
         elem = None
         if isinstance(obj, list):
+            print "Found list !"
             elem = obj[0]
         else:
             elem = obj
