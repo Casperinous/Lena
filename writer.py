@@ -1,12 +1,6 @@
 #from utils import Data, ItemIndexer, DexUtils
 
-"""
-Experimental implementation of a dict with functions
-associated with the kind of class the __object prope-
-rty is pointed to in the Section class. It is kind
-like reflection, but it is not.
-Any other suggestion would be considered a gift.
-"""
+from utils import Data
 
 
 class ItemWriter:
@@ -15,13 +9,13 @@ class ItemWriter:
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdItem.java#99
     def writeStringIdItem(dex, item):
         # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1826
-        dex.getWriter().writeSignedInt(item.get_off())
+        dex.getWriter().writeSignedInt(item.get_off(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeIdItem.java#60
     def writeTypeIdItem(dex, item):
         # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1864
-        dex.getWriter().writeSignedInt(item.get_descriptor_idx())
+        dex.getWriter().writeSignedInt(item.get_descriptor_idx(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ProtoIdItem.java#129
@@ -31,46 +25,46 @@ class ItemWriter:
         # int returnIdx = file.getTypeIds().indexOf(prototype.getReturnType());
         # int paramsOff = OffsettedItem.getAbsoluteOffsetOr0(parameterTypes);
 
-        dex.getWriter().writeSignedInt(item.get_shorty_idx())
-        dex.getWriter().writeSignedInt(item.get_return_type_idx())
-        dex.getWriter().writeSignedInt(item.get_parameters_off())
+        dex.getWriter().writeSignedInt(item.get_shorty_idx(), True)
+        dex.getWriter().writeSignedInt(item.get_return_type_idx(), True)
+        dex.getWriter().writeSignedInt(item.get_parameters_off(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#63
     def writeFieldIdItem(dex, item):
-        dex.getWriter().writeSignedInt(item.get_class_idx())
-        dex.getWriter().writeSignedInt(item.get_type_idx())
-        dex.getWriter().writeSignedInt(item.get_name_idx())
+        dex.getWriter().writeSignedShort(item.get_class_idx(), True)
+        dex.getWriter().writeSignedShort(item.get_type_idx(), True)
+        dex.getWriter().writeSignedInt(item.get_name_idx(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MemberIdItem.java#63
     def writeMethodIdItem(dex, item):
-        dex.getWriter().writeSignedInt(item.get_class_idx())
-        dex.getWriter().writeSignedInt(item.get_type_idx())
-        dex.getWriter().writeSignedInt(item.get_name_idx())
+        dex.getWriter().writeSignedShort(item.get_class_idx(), True)
+        dex.getWriter().writeSignedShort(item.get_proto_idx(), True)
+        dex.getWriter().writeSignedInt(item.get_name_idx(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDefItem.java#187
     def writeClassDefItem(dex, item):
-        dex.getWriter().writeSignedInt(item.get_class_idx())
-        dex.getWriter().writeSignedInt(item.get_access_flags())
-        dex.getWriter().writeSignedInt(item.get_superclass_idx())
-        dex.getWriter().writeSignedInt(item.get_interfaces_off())
-        dex.getWriter().writeSignedInt(item.get_source_file_idx())
-        dex.getWriter().writeSignedInt(item.get_annotations_off())
-        dex.getWriter().writeSignedInt(item.get_class_data_off())
-        dex.getWriter().writeSignedInt(item.get_static_values_off())
+        dex.getWriter().writeSignedInt(item.get_class_idx(), True)
+        dex.getWriter().writeSignedInt(item.get_access_flags(), True)
+        dex.getWriter().writeSignedInt(item.get_superclass_idx(), True)
+        dex.getWriter().writeSignedInt(item.get_interfaces_off(), True)
+        dex.getWriter().writeSignedInt(item.get_source_file_idx(), True)
+        dex.getWriter().writeSignedInt(item.get_annotations_off(), True)
+        dex.getWriter().writeSignedInt(item.get_class_data_off(), True)
+        dex.getWriter().writeSignedInt(item.get_static_values_off(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeListItem.java#110
     def writeTypeItem(dex, item):
-        dex.getWriter().writeSignedShort(item.get_type_idx())
+        dex.getWriter().writeSignedShort(item.get_type_idx(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDataItem.java#343
     def writeClassDataItem(dex, item):
         # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L3155
-        dex.getWriter().writeBytes(item.get_raw())
+        dex.getWriter().writeBytes(item.get_raw(), True)
 
     @staticmethod
     def writeStringDataItem(dex, item):
@@ -83,8 +77,8 @@ class ItemWriter:
         out.writeByte(0);
         """
 
-        dex.getWriter().writeBytes(writeuleb128(item.get_utf16_size()))
-        dex.getWriter().writeBytes(item.get_data())
+        dex.getWriter().writeBytes(writeuleb128(item.get_utf16_size()), True)
+        dex.getWriter().writeBytes(item.get_data(), True)
         dex.getWriter().writeZeroes(1)
 
     @staticmethod
@@ -107,11 +101,11 @@ class ItemWriter:
 
 class SectionWriter:
 
-    @classmethod
+    @staticmethod
     def checkWriterValidity(dex, section):
         writer = dex.getWriter()
         writer.alignTo(section.getAligment())
-        Data.checkAligmentValidity(writer.getCursor(), section.getFileOff())
+        Data.checkAligmentValidity(writer.getCursor(), section.getFileOff(), section.getName())
 
 
     @staticmethod
@@ -184,71 +178,71 @@ class SectionWriter:
 
 class Buffer:
 
-    def __init__(size):
+    def __init__(self, size):
 
-        self.__buffer = bytearray(size)
+        self.buffer = bytearray(size)
 
-        self.__size = size
+        self.size = size
 
-        self.__idx = 0
+        self.idx = 0
 
     def alignToOff(self, aligment, offset):
 
-        self.__idx = Data.toAligned(aligment, offset)
+        self.idx = Data.toAligned(aligment, offset)
 
     def alignTo(self, aligment):
 
-        self.__idx = Data.toAligned(aligment, self.__idx)
+        self.idx = Data.toAligned(aligment, self.idx)
 
     def setCursor(self, offset):
 
-        if offset > self.__size:
+        if offset > self.size:
             raise Exception("Offset bigger than buffer's size")
-        self.__idx = offset
+        self.idx = offset
 
     def getCursor(self):
 
-        return self.__idx
+        return self.idx
 
 
 class BufferWriter(Buffer):
 
-    def __init__(size):
+    def __init__(self, size):
 
-        super().__init__(size)
+        Buffer.__init__(self, size)
 
     def writeUnsignedInt(self, data, packed=False):
         if packed:
             data = Data.toUnsignedInt(data)
 
-        self.__buffer[self.__idx: self.__idx + len(data)] = data
-        self.__idx += len(data)
+        self.buffer[self.idx: self.idx + 4] = data
+        self.idx += len(data)
 
     def writeSignedInt(self, data, packed=False):
         if packed:
             data = Data.toSignedInt(data)
 
-        self.__buffer[self.__idx: self.__idx + len(data)] = data
-        self.__idx += len(data)
+        self.buffer[self.idx: self.idx + 4] = data
+        self.idx += len(data)
 
     def writeUnsignedShort(self, data, packed=False):
         if packed:
             data = Data.toUnsignedShort(data)
 
-        self.__buffer[self.__idx: self.__idx + len(data)] = data
-        self.__idx += len(data)
+        self.buffer[self.idx: self.idx + 2] = data
+        self.idx += len(data)
 
     def writeSignedShort(self, data, packed=False):
         if packed:
             data = Data.toSignedShort(packed)
 
-        self.__buffer[self.__idx: self.__idx + len(data)] = data
-        self.__idx += len(data)
+        self.buffer[self.idx: self.idx + 2] = data
+        self.idx += len(data)
 
     def writeBytes(self, data):
 
-        self.__buffer[self.__idx: self.__idx + len(data)] = data
-        self.__idx += len(data)
+        self.buffer[self.idx: self.idx + len(data)] = data
+        self.idx += len(data)
 
     def writeZeroes(self, num):
         for i in range(0, num):
@@ -256,4 +250,4 @@ class BufferWriter(Buffer):
 
     def finalize(self, filename):
         with open(filename, 'wb') as f:
-            f.write(self.__buffer)
+            f.write(self.buffer)
