@@ -18,3 +18,4 @@ dex = Dex(vm.map_list)
 if dex:
 	dex.initSections()
 	dex.prepareSections()
+	dex.writeToDisk()
