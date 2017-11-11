@@ -212,10 +212,9 @@ class MixedSection(Section):
 
         elif isinstance(elem, CodeItem):
             self.data = self.object
-            print self.data
-            for item in self.data:
-                # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L6667
-                writer_offset += item.get_length()
+            # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L6667
+            writer_offset += self.data.get_length()
+            
 
         elif isinstance(elem, TypeList):
             self.data = self.object
