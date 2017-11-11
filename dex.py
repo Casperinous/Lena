@@ -55,12 +55,19 @@ class Dex:
         self.__map = sections_map
 
         self.__writer = None
+
+        self.__size = 0
         """
         In order to build the Dex succesfully, we must follow the 
         original order of the sections as it is used in Android's
         source code:
         https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#126
         P.S We do not care about word_data.
+        ^
+        |
+        |
+        --------- Shame on me. Shame. I did not correctly understand the Dex Layout, excluding from code section, the
+                   most important one. How did i manage to do this. How.
         """
 
     def initSections(self):
@@ -73,10 +80,11 @@ class Dex:
             self.field_ids,
             self.method_ids,
             self.classes_def,
+            self.word_data,
             self.type_list,
             self.string_data_items,
             self.class_data_items,
-            #self.sec_map
+            self.sec_map
         ]
 
     def _parseSections(self):
@@ -136,6 +144,13 @@ class Dex:
         else:
             raise ValueError("ClassDef section should not be None.")
 
+        
+        self.word_data = self.__map.get_item_type( "TYPE_CODE_ITEM" )
+        if self.word_data:
+            self.word_data = MixedSection(0x2001, 'code_section', 4, None, self.word_data, False)
+        else:
+            raise ValueError("Code section should not be None.")
+
         self.type_list = self.__map.get_item_type("TYPE_TYPE_LIST")
         if self.type_list:
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#108
@@ -162,6 +177,8 @@ class Dex:
         else:
             raise ValueError("ClassData section should not be None.")
 
+        self.sec_map = MixedSection(0x2001, 'map', 4, None, self.__map)
+
         # The most important piece of the building process.
         # Must be initialized after all the items have been finalized in other sections.
         # self.sec_map = MixedSection('map', 4, None, self.__map)
@@ -170,7 +187,7 @@ class Dex:
         for section in self.sections:
             section.writeTo(self)
 
-        self.__writer.finalize('Semi-Test.bin')
+        self.__writer.finalize('classes.dex')
 
     def saveSectionChanges(self, section):
 
@@ -218,9 +235,9 @@ class Dex:
             section.prepareSection()
             # Well size is defined now so get it.
             offset = placedAt + section.getWriteSize()
-            print '{0} ends at offset {1}'.format(section.getName(), offset)
 
         if offset > 0:
+            self.__size = offset
             print "Dex's size {0}".format(offset)
             self.__writer = BufferWriter(offset)
 
@@ -241,6 +258,31 @@ class Dex:
 
         return self.type_ids
 
+    def getProtoIdsSection(self):
+
+        return self.proto_ids
+
+    def getFieldIdsSection(self):
+
+        return self.field_ids
+
+    def getMethodIdsSection(self):
+
+        return self.method_ids
+
+    def getClassesSection(self):
+
+        return self.classes_def
+
+    def getMap(self):
+
+        return self.sec_map
+
     def getSectionArr(self):
 
         return self.sections
+
+    def getDexSize(self):
+
+        return self.__size
+

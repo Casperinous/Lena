@@ -1,7 +1,6 @@
 import struct
-from androguard.core.bytecodes.dvm import writeuleb128, StringDataItem
+from androguard.core.bytecodes.dvm import writeuleb128, StringDataItem, MapList
 from androguard.core import bytecode
-#from items import MapItem
 
 
 def stringToMutf8(string):
@@ -70,7 +69,6 @@ class Data:
     def getInstance(obj):
         elem = None
         if isinstance(obj, list):
-            print "Found list !"
             elem = obj[0]
         else:
             elem = obj
@@ -117,22 +115,3 @@ class Generator:
         return item
 
 
-class DexUtils:
-
-    @staticmethod
-    def groupMapSections(dex):
-
-        items = []
-        for section in dex.getSectionArr():
-            if not isinstance(section, MapList):
-                arr = section.getRawData()
-                item = None
-                if isinstance(arr, list):
-
-                    size = len(arr)
-                    item = MapItem(section, arr[0], arr[-1], size)
-                else:
-
-                    item = MapItem(section, arr, arr, 1)
-                items.append(item)
-        return items

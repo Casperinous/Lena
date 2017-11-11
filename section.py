@@ -1,8 +1,10 @@
-from androguard.core.bytecodes.dvm import StringIdItem, TypeHIdItem, ProtoHIdItem, FieldHIdItem, MethodHIdItem, ClassHDefItem, StringDataItem, ClassDataItem, TypeList, MapList
+from androguard.core.bytecodes.dvm import HeaderItem, StringIdItem, TypeHIdItem, ProtoHIdItem, FieldHIdItem, MethodHIdItem, ClassHDefItem, StringDataItem, ClassDataItem, TypeList, MapList, CodeItem, writeuleb128
 #from utils import SectionWriter
 from items import OffsettedItem
 from utils import Data
 from writer import SectionWriter
+from constants import HEADER_SIZE
+import binascii
 
 
 class Section(OffsettedItem):
@@ -11,7 +13,6 @@ class Section(OffsettedItem):
 
         OffsettedItem.__init__(self, alignment)
         self.name = name
-        print 'Section name :> [{0}]'.format(self.name)
         # this is the raw data for sections which we dont change
         if data:
             self.data = data
@@ -31,7 +32,6 @@ class Section(OffsettedItem):
         self.callback = None
         # Expected a short number here.
         self.typeid = typeid
-
 
     def _placeItems(self):
 
@@ -70,6 +70,13 @@ class Section(OffsettedItem):
 
         # TODO - Combine in an OR clause the items that have the same writesize
         # also use else if?
+        if isinstance(elem, HeaderItem):
+            # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/HeaderItem.java#55
+            self.instance_write_size = HEADER_SIZE
+            self.data = self.object
+            self.write_size = self.instance_write_size
+            self.callback = SectionWriter.writeHeaderSection
+
         if isinstance(elem, StringIdItem):
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdItem.java#29
             self.instance_write_size = 4
@@ -120,7 +127,6 @@ class Section(OffsettedItem):
             self.write_size = self.instance_write_size * len(self.data)
             self.callback = SectionWriter.writeClassDefSection
 
-
     def addItem(self, obj):
         # We assume that, we have a list of same objects.
         if isinstance(self.data, list):
@@ -150,45 +156,46 @@ class Section(OffsettedItem):
         pass
 
     def writeTo(self, dex):
+        print '[*] Writing part {0} size {1} at offset {2}'.format(self.name, self.write_size, self.file_off)
         if self.callback:
             self.callback(self.data, self, dex)
-        
 
     def prepareSection(self):
         self._placeItems()
 
     def writeHeaderPart(self, writer):
-        pass
+        writer.writeSignedInt(len(self.data), True)
+        writer.writeSignedInt(self.getFileOff(), True)
 
     def getName(self):
 
         return self.name
 
+
 class MixedSection(Section):
 
-    
     def __init__(self, typeid, name, alignment, data, andro_object, is_needed_in_header=False):
 
-        super(MixedSection, self).__init__(typeid, name, alignment, data, andro_object, is_needed_in_header)
-    
+        super(MixedSection, self).__init__(typeid, name,
+                                           alignment, data, andro_object, is_needed_in_header)
 
     def _placeItems(self):
-
-        
-        elem = Data.getInstance(self.getAndroguardObj())
+        elem = Data.getInstance(self.object)
         writer_offset = 0
 
         if isinstance(elem, StringDataItem):
             self.data = self.object
             self.callback = SectionWriter.writeStringDataSection
             # How convinient to have access to such great methods :)
-            for item in self.object:
+            for item in self.data:
                 # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1775
-                off = Data.toAligned(self.__aligment, writer_offset)
+                off = Data.toAligned(self.alignment, writer_offset)
                 item.set_off(off)
                 # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MixedItemSection.java#319
+                # print binascii.hexlify(writeuleb128(item.get_utf16_size()))
                 writer_offset = off + \
-                    (writeuleb128(item.get_utf16_size) + len(item.get_data()) + 1)
+                    (len(writeuleb128(item.get_utf16_size())) +
+                     len(item.get_data()) + 1)
 
             # With a little luck, it might work ...
             self.callback = SectionWriter.writeStringDataSection
@@ -197,19 +204,28 @@ class MixedSection(Section):
             self.data = self.object
             self.callback = SectionWriter.writeClassDataSection
             for item in self.object:
-                off = Data.toAligned(self.__aligment, writer_offset)
+                off = Data.toAligned(self.alignment, writer_offset)
                 item.set_off(off)
                 # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MixedItemSection.java#319
                 # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L3167
                 writer_offset = off + item.get_length()
 
+        elif isinstance(elem, CodeItem):
+            self.data = self.object
+            print self.data
+            for item in self.data:
+                # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L6667
+                writer_offset += item.get_length()
+
         elif isinstance(elem, TypeList):
-            self.data = self.object.get_list()
+            self.data = self.object
             self.callback = SectionWriter.writeTypeListSection
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeListItem.java#48
             self.instance_write_size = 2
-            self.write_size = len(
-                self.data * self.instance_write_size) + 4
+            #self.write_size = len(self.data * self.instance_write_size) + 4
+            for items in self.data:
+                its = items.get_list()
+                writer_offset += (len(its) * self.instance_write_size) + 4
             '''
             Androguard does not have at v2 functions or properties related
             to offsets.
@@ -225,13 +241,13 @@ class MixedSection(Section):
             self.data = self.object.map_item
             # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MapItem.java#32
             self.instance_write_size = 3 * 4
-            self.callback = Section.writeMapItemSection
+            self.callback = SectionWriter.writeMapItemSection
             self.write_size = len(
                 self.object.get_obj()) * self.instance_write_size
             # Abuse of property - wish there was a function instead for optical
             # pleasure :/
             for item in self.data:
-                off = Data.toAligned(self.__aligment, writer_offset)
+                off = Data.toAligned(self.alignment, writer_offset)
                 # Abuse of property again :/ :/
                 item.off = off
                 writer_offset = off + self.instance_write_size
@@ -244,6 +260,4 @@ class MixedSection(Section):
         self._placeItems()
 
     def writeHeaderPart(self, writer):
-
-        writer.writeSignedInt(len(self.data))
-        writer.writeSignedInt(self.getFileOff())
+        pass

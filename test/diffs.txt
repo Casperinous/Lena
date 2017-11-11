@@ -1,0 +1,16 @@
+Diff between generated .dex
+
+- string_ids_size : Same
+- string_ids_off : Same
+- type_ids_size : Same
+- type_ids_off : Same
+- proto_ids_size: Same
+- proto_ids_off : Same
+- field_ids_size : Same
+- field_ids_off : Same
+- method_ids_size : Same
+- method_ids_off : Same
+- class_defs_size : Same
+- class_defs_off : Same
+- data_size : Diff
+- data_off : Diff

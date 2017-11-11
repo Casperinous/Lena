@@ -44,7 +44,7 @@ class OffsettedItem(object):
 
 		return self.file_off
 
-	def getAbsFileOff(relative):
+	def getAbsFileOff(self, relative):
 
 		return self.file_off + relative
 

@@ -1,15 +1,78 @@
 #from utils import Data, ItemIndexer, DexUtils
 
 from utils import Data
-
+from dexutils import DexUtils
+from constants import DEX_MAGIC, HEADER_SIZE, ENDIAN_TAG
+from androguard.core.bytecodes.dvm import writeuleb128
 
 class ItemWriter:
+
+    @staticmethod
+    def writeHeaderItem(dex, item):
+        #https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/HeaderItem.java#66
+        """
+        int mapOff = file.getMap().getFileOffset();
+            Section firstDataSection = file.getFirstDataSection();
+            Section lastDataSection = file.getLastDataSection();
+            int dataOff = firstDataSection.getFileOffset();
+            int dataSize = lastDataSection.getFileOffset() +
+                lastDataSection.writeSize() - dataOff;
+        """
+        mapOff = dex.getMap().getFileOff()
+        dataOff = mapOff
+        dataSize = dex.getMap().getFileOff() + dex.getMap().getWriteSize()
+
+
+        """
+        // Write the magic number.
+            for (int i = 0; i < 8; i++) {
+                out.writeByte(MAGIC.charAt(i));
+            }
+            // Leave space for the checksum and signature.
+            out.writeZeroes(24);
+            out.writeInt(file.getFileSize());
+            out.writeInt(HEADER_SIZE);
+            out.writeInt(ENDIAN_TAG);
+        """
+        writer = dex.getWriter()
+        writer.writeBytes(DEX_MAGIC)
+        writer.writeZeroes(24)
+        writer.writeSignedInt(dex.getDexSize(), True)
+        writer.writeSignedInt(HEADER_SIZE, True)
+        writer.writeSignedInt(ENDIAN_TAG, True)
+
+        """
+            out.writeZeroes(8);
+            out.writeInt(mapOff);
+            // Write out each section's respective header part.
+            file.getStringIds().writeHeaderPart(out);
+            file.getTypeIds().writeHeaderPart(out);
+            file.getProtoIds().writeHeaderPart(out);
+            file.getFieldIds().writeHeaderPart(out);
+            file.getMethodIds().writeHeaderPart(out);
+            file.getClassDefs().writeHeaderPart(out);
+        """
+        writer.writeZeroes(8)
+        writer.writeSignedInt(mapOff, True)
+        dex.getStringIdsSection().writeHeaderPart(writer)
+        dex.getTypeIdsSection().writeHeaderPart(writer)
+        dex.getProtoIdsSection().writeHeaderPart(writer)
+        dex.getFieldIdsSection().writeHeaderPart(writer)
+        dex.getMethodIdsSection().writeHeaderPart(writer)
+        dex.getClassesSection().writeHeaderPart(writer)
+
+        """
+        out.writeInt(dataSize);
+        out.writeInt(dataOff);
+        """
+        writer.writeSignedInt(dataSize, True)
+        writer.writeSignedInt(dataOff, True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/StringIdItem.java#99
     def writeStringIdItem(dex, item):
         # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L1826
-        dex.getWriter().writeSignedInt(item.get_off(), True)
+        dex.getWriter().writeSignedInt(item.get_string_data_off(), True)
 
     @staticmethod
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeIdItem.java#60
@@ -64,7 +127,7 @@ class ItemWriter:
     # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/ClassDataItem.java#343
     def writeClassDataItem(dex, item):
         # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L3155
-        dex.getWriter().writeBytes(item.get_raw(), True)
+        dex.getWriter().writeBytes(item.get_raw())
 
     @staticmethod
     def writeStringDataItem(dex, item):
@@ -77,8 +140,8 @@ class ItemWriter:
         out.writeByte(0);
         """
 
-        dex.getWriter().writeBytes(writeuleb128(item.get_utf16_size()), True)
-        dex.getWriter().writeBytes(item.get_data(), True)
+        dex.getWriter().writeBytes(writeuleb128(item.get_utf16_size()))
+        dex.getWriter().writeBytes(item.get_data())
         dex.getWriter().writeZeroes(1)
 
     @staticmethod
@@ -88,7 +151,7 @@ class ItemWriter:
         offset = 0
         fitem = item.getFirstItem()
         if fitem:
-            offset = item.getSection().getAbsFileOff(fitem.get_off())
+            offset = item.getSection().getAbsFileOff(fitem.offset)
         else:
             offset = item.getSection().getFileOff()
 
@@ -107,6 +170,10 @@ class SectionWriter:
         writer.alignTo(section.getAligment())
         Data.checkAligmentValidity(writer.getCursor(), section.getFileOff(), section.getName())
 
+    @staticmethod
+    def writeHeaderSection(item, section, dex):
+        SectionWriter.checkWriterValidity(dex, section)
+        ItemWriter.writeHeaderItem(dex,item)
 
     @staticmethod
     def writeStringIdSection(items, section, dex):
@@ -148,9 +215,12 @@ class SectionWriter:
     def writeTypeListSection(items, section, dex):
         # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/TypeListItem.java#107
         SectionWriter.checkWriterValidity(dex, section)
-        dex.getWriter().writeSignedInt(len(items))
+        # dex.getWriter().writeSignedInt(len(items), True)
         for item in items:
-            ItemWriter.writeTypeItem(dex, item)
+            its = item.get_list()
+            dex.getWriter().writeSignedInt(len(its), True)
+            for it in its: 
+                ItemWriter.writeTypeItem(dex, it)
 
     @staticmethod
     def writeStringDataSection(items, section, dex):
@@ -171,7 +241,7 @@ class SectionWriter:
         # If we passed, we are Jedi Knights !
         items = DexUtils.groupMapSections(dex)
         if items and len(items) > 0:
-            writer.writeSignedInt(len(items), True)
+            dex.getWriter().writeSignedInt(len(items), True)
             for item in items:
                 ItemWriter.writeMapItem(dex, item)
 
@@ -241,12 +311,14 @@ class BufferWriter(Buffer):
 
     def writeBytes(self, data):
 
-        self.buffer[self.idx: self.idx + len(data)] = data
-        self.idx += len(data)
+        for c in data:
+            self.buffer[self.idx: self.idx + 1] = c
+            self.idx += 1
 
     def writeZeroes(self, num):
-        for i in range(0, num):
-            self._array.extend('\0')
+        for i in range(1, num + 1):
+            self.buffer[self.idx: self.idx + i] = '\0'
+        self.idx += num
 
     def finalize(self, filename):
         with open(filename, 'wb') as f:
