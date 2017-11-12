@@ -1,0 +1,34 @@
+Hopefully, the last piece of the puzzle will be the write function of the .code section.
+Based on the source code at [0] it is clear that, CodeItem class extends the OffsettedItem [1] class thus it is needed for the offsets of the items to be setted. This is achieved at [2], where every item of the collection, referenced by the private property items of the MixedSection is assigned an integer as an offset. The flow of actions is the following:
+
+1) placeItems() is called as part of the MixedItemSection class
+|
+-----> Loop for every Item
+|
+2) place() [2] function is called by the item, with a parameter relative to the section that the item is part of.
+|
+-----> Basic aligment adjustment, typical for most Items
+|
+3) inside place() there is a call of the place0() [0]  which is usually overrided by the item extending [1]
+|
+-----> A proper call to the place0() will also set the writesize(), needed for the calculations of the offsets
+|
+4) Because section is before the map section, but the map section includes part of the code section, it is normal for the binary to have that big difference in size after including .code section in our rebuilding process.
+
+Notes:
+------
+
+The code section is much more complicated than the others sections. Due to the nature of the instructions, their variety but also the nature of Java itself ( error handling, object orientation etc etc),
+there are a lot of parameters to take into consideration before assigning an offset to an Item but also before calculating its size too.
+The main problem with Items with that many properties during the writing process, is that every property which will be written to disk, must be properly aligned in relation with the whole file, but also
+with the section it belongs too.
+
+
+
+
+
+References:
+[0] https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/CodeItem.java
+[1] https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/OffsettedItem.java#223
+[2] https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/DexFile.java#524
+[3] https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/MixedItemSection.java#293
