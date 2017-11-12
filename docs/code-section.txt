@@ -1,7 +1,7 @@
 Hopefully, the last piece of the puzzle will be the write function of the .code section.
 Based on the source code at [0] it is clear that, CodeItem class extends the OffsettedItem [1] class thus it is needed for the offsets of the items to be setted. This is achieved at [2], where every item of the collection, referenced by the private property items of the MixedSection is assigned an integer as an offset. The flow of actions is the following:
 
-1) placeItems() is called as part of the MixedItemSection class
+1) placeItems()[3] is called as part of the MixedItemSection class
 |
 -----> Loop for every Item
 |
