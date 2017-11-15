@@ -1,6 +1,9 @@
 from androguard.core.bytecodes.dvm import TYPE_MAP_ITEM
 from section import Section, MixedSection
 from writer import BufferWriter
+from utils import Data
+from dicts import CachedItemDictionary
+from items import IndexedItemsValues
 import copy
 
 """
@@ -241,6 +244,8 @@ class Dex:
             print "Dex's size {0}".format(offset)
             self.__writer = BufferWriter(offset)
 
+        self._initInternalDict()
+
     def __sortStringDataItems(self, arr):
         if arr:
             arr = sorted(arr, key=lambda item: item.data)
@@ -286,3 +291,27 @@ class Dex:
 
         return self.__size
 
+    def _initInternalDict(self):
+
+        self.dict = CachedItemDictionary()
+
+        strings_ids = self.strings_ids.getRawData()
+        instance_type = Data.getInstance(strings_ids)
+
+        self.dict.createTypeDictionary(instance_type)
+        self.dict.fillPairsDict(instance_type, strings_ids, lambda x : IndexedItemsValues(x.get_off()))
+
+
+        type_ids = self.type_ids.getRawData()
+        instance_type = Data.getInstance(type_ids)
+
+        self.dict.createTypeDictionary(instance_type)
+        self.dict.fillPairsDict(instance_type, type_ids, lambda x : IndexedItemsValues(x.get_descriptor_idx()))
+
+        """
+        method_ids = self.method_ids.getRawData()
+        instance_type = Data.getInstance(method_ids)
+
+        self.dict.createTypeDictionary(instance_type)
+        self.dict.fillPairsDict(instance_type, method_ids, lambda x : IndexedItemsValues(x.get_descriptor_idx()))
+        """
