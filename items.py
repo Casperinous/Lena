@@ -3,58 +3,58 @@ from utils import Data
 
 class OffsettedItem(object):
 
-	def __init__(self, alignment):
+    def __init__(self, alignment):
 
-		#super(OffsettedItem, self).__init__()
-		self.alignment = alignment
-		# should be set later on during the write process
-		self.file_off = 0
-		# Should be computed based on the available data
-		self.write_size = 0
-		# Check the instance write size in disk
-		self.instance_write_size = 0
+        #super(OffsettedItem, self).__init__()
+        self.alignment = alignment
+        # should be set later on during the write process
+        self.file_off = 0
+        # Should be computed based on the available data
+        self.write_size = 0
+        # Check the instance write size in disk
+        self.instance_write_size = 0
 
-	def setFileOff(self, file_off):
-		"""
-		Straight from the Android's source code, mapping one to one
-		the java code to the python one.
-		-----------------------------------------------------------
+    def setFileOff(self, file_off):
+        """
+        Straight from the Android's source code, mapping one to one
+        the java code to the python one.
+        -----------------------------------------------------------
 
 
-		if (fileOffset < 0) {
-		    throw new IllegalArgumentException("fileOffset < 0");
-		}
-		if (this.fileOffset >= 0) {
-		    throw new RuntimeException("fileOffset already set");
-		}
-		int mask = alignment - 1;
-		fileOffset = (fileOffset + mask) & ~mask;
-		this.fileOffset = fileOffset;
+        if (fileOffset < 0) {
+            throw new IllegalArgumentException("fileOffset < 0");
+        }
+        if (this.fileOffset >= 0) {
+            throw new RuntimeException("fileOffset already set");
+        }
+        int mask = alignment - 1;
+        fileOffset = (fileOffset + mask) & ~mask;
+        this.fileOffset = fileOffset;
 
-		mask = self.alignment - 1
-		file_off = ( file_off + mask ) & ~mask
-		"""
-		res = Data.toAligned(self.alignment, file_off)
+        mask = self.alignment - 1
+        file_off = ( file_off + mask ) & ~mask
+        """
+        res = Data.toAligned(self.alignment, file_off)
 
-		self.file_off = res
+        self.file_off = res
 
-		return res
+        return res
 
-	def getFileOff(self):
+    def getFileOff(self):
 
-		return self.file_off
+        return self.file_off
 
-	def getAbsFileOff(self, relative):
+    def getAbsFileOff(self, relative):
 
-		return self.file_off + relative
+        return self.file_off + relative
 
-	def getWriteSize(self):
+    def getWriteSize(self):
 
-		return self.write_size
+        return self.write_size
 
-	def getAligment(self):
+    def getAligment(self):
 
-		return self.alignment
+        return self.alignment
 
 
 class MapItem(OffsettedItem):
@@ -107,3 +107,21 @@ class MapItem(OffsettedItem):
     def writeTo(writer):
         # For now pass, later will be assigned the SectionWriter.method
         pass
+
+
+class IndexedItemsValues:
+
+    def __init__(self, old_value):
+
+        self.old_value = old_value
+        self.new_value = 0
+
+    def setNewValue(self, value):
+
+        self.new_value = value
+
+    def getOldValue(self):
+        return self.old_value
+
+    def getNewValue(self):
+        return self.new_value
