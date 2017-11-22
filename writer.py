@@ -263,6 +263,18 @@ class SectionWriter:
                 ItemWriter.writeMapItem(dex, item)
 
 
+class InstructionWriter:
+
+    @staticmethod
+    def writeInstrFormat10t(dex, instr):
+        # https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/code/form/Form10t.java#87
+        """
+        int offset = ((TargetInsn) insn).getTargetOffset();
+        write(out, opcodeUnit(insn, (offset & 0xff)));
+        """
+
+        dex.getWriter().writeSignedShort()
+
 class Buffer:
 
     def __init__(self, size):
