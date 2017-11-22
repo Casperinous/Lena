@@ -161,6 +161,23 @@ class ItemWriter:
         dex.getWriter().writeSignedInt(item.getItemCount(), True)
         dex.getWriter().writeSignedInt(offset, True)
 
+    @staticmethod
+    def writeDalvikCodeItem(dex, item):
+        #https://android.googlesource.com/platform/dalvik/+/master/dexgen/src/com/android/dexgen/dex/file/CodeItem.java#233
+        """
+        out.writeShort(regSz);
+        out.writeShort(insSz);
+        out.writeShort(outsSz);
+        out.writeShort(triesSz);
+        out.writeInt(debugOff);
+        out.writeInt(insnsSz);
+        """
+        dex.getWriter().writeSignedShort(item.get_registers_size(), True)
+        dex.getWriter().writeSignedShort(item.get_ins_size(), True)
+        dex.getWriter().writeSignedShort(item.get_outs_size(), True)
+        dex.getWriter().writeSignedShort(item.get_tries_size(), True)
+        dex.getWriter().writeSignedInt(item.get_debug_info_off(), True)
+        dex.getWriter().writeSignedInt(item.get_insns_size(), True)
 
 class SectionWriter:
 

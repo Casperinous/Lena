@@ -211,9 +211,16 @@ class MixedSection(Section):
                 writer_offset = off + item.get_length()
 
         elif isinstance(elem, CodeItem):
-            self.data = self.object
+            self.data = self.object.get_obj()
             # https://github.com/androguard/androguard/blob/v2.0/androguard/core/bytecodes/dvm.py#L6667
-            writer_offset += self.data.get_length()
+            for item in self.data:
+                # We are looping through DalvikCode items
+                off = Data.toAligned(self.alignment, writer_offset)
+                item.set_off(off)
+                writer_offset = off + item.get_size() 
+
+            if writer_offset != self.object.get_length():
+                print '[-] Expected a total length of {0} but generated {1}'.format(self.object.get_length(), writer_offset)
             
 
         elif isinstance(elem, TypeList):
