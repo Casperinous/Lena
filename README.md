@@ -11,5 +11,11 @@ The implementation of the Writer class responsible for rebuilding the modified .
 
 The project was never finished due to limited free time. It should be noted that, it is certain to have bugs, logic errors, late night ranting commit messages and not recommended pythonic implementations of things.
 
+### TODO
+- Fix bugs
+- Have a stable POC
+- Rewrite certain things in a more *pythonic* way.
+- Receive criticism
+
 ## Acknowledgments
 [rotlogix](https://github.com/rotlogix) for actually reviewing an early idea of Ronin and prompting me to *actually* begin writing Lena.
